@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harsha Bot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Söhne", "Segoe UI", system-ui, sans-serif;
+      background: #212121;
+      color: #ececec;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: #171717;
+      display: flex;
+      flex-direction: column;
+      padding: 0.75rem;
+      border-right: 1px solid #2f2f2f;
+      flex-shrink: 0;
+    }
+
+    .new-chat-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.75rem;
+      background: transparent;
+      border: 1px solid #424242;
+      border-radius: 0.75rem;
+      color: #ececec;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .new-chat-btn:hover {
+      background: #2f2f2f;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 0.5rem;
+      font-size: 0.75rem;
+      color: #8e8e8e;
+    }
+
+    /* Main area */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      position: relative;
+    }
+
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    /* Welcome screen */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .welcome h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: #ececec;
+    }
+
+    .suggestions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      max-width: 640px;
+      width: 100%;
+    }
+
+    .suggestion {
+      background: #2f2f2f;
+      border: 1px solid #424242;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .suggestion:hover {
+      background: #3a3a3a;
+    }
+
+    .suggestion-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+
+    .suggestion-desc {
+      font-size: 0.8rem;
+      color: #8e8e8e;
+    }
+
+    /* Messages */
+    .messages {
+      max-width: 768px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 1.5rem 1rem 8rem;
+    }
+
+    .message-row {
+      display: flex;
+      gap: 1rem;
+      padding: 1.5rem 0;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .avatar.user {
+      background: #5436da;
+      color: white;
+    }
+
+    .avatar.bot {
+      background: #19c37d;
+      color: white;
+    }
+
+    .message-content {
+      flex: 1;
+      line-height: 1.7;
+      font-size: 1rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding-top: 0.15rem;
+    }
+
+    .message-content.loading {
+      color: #8e8e8e;
+    }
+
+    .message-content.error {
+      color: #ef4444;
+      font-size: 0.9rem;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      height: 1.5rem;
+    }
+
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      background: #8e8e8e;
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Input area */
+    .input-wrapper {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1rem 1rem 1.5rem;
+      background: linear-gradient(transparent, #212121 30%);
+    }
+
+    .input-container {
+      max-width: 768px;
+      margin: 0 auto;
+      background: #2f2f2f;
+      border: 1px solid #424242;
+      border-radius: 1.5rem;
+      display: flex;
+      align-items: flex-end;
+      padding: 0.75rem 0.75rem 0.75rem 1.25rem;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .input-container:focus-within {
+      border-color: #565656;
+    }
+
+    #user-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #ececec;
+      font-size: 1rem;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      max-height: 200px;
+      line-height: 1.5;
+      padding: 0.25rem 0;
+    }
+
+    #user-input::placeholder {
+      color: #8e8e8e;
+    }
+
+    #user-input:disabled {
+      opacity: 0.5;
+    }
+
+    .send-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: #ececec;
+      color: #212121;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background: #fff;
+    }
+
+    .send-btn:disabled {
+      background: #424242;
+      color: #8e8e8e;
+      cursor: not-allowed;
+    }
+
+    .input-hint {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #8e8e8e;
+      margin-top: 0.5rem;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+
+      .suggestions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <button type="button" class="new-chat-btn" id="new-chat-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        New chat
+      </button>
+      <div class="sidebar-footer">Harsha Bot · llama3.2:3b</div>
+    </aside>
+
+    <main class="main">
+      <div class="chat-area" id="chat-area">
+        <div id="welcome" class="welcome">
+          <h1>How can I help you today?</h1>
+          <div class="suggestions">
+            <div class="suggestion" data-prompt="Explain quantum computing in simple terms">
+              <div class="suggestion-title">Explain a concept</div>
+              <div class="suggestion-desc">Quantum computing in simple terms</div>
+            </div>
+            <div class="suggestion" data-prompt="Write a Python function to reverse a string">
+              <div class="suggestion-title">Help me code</div>
+              <div class="suggestion-desc">Python function to reverse a string</div>
+            </div>
+            <div class="suggestion" data-prompt="Give me 5 creative blog post ideas about AI">
+              <div class="suggestion-title">Brainstorm ideas</div>
+              <div class="suggestion-desc">Blog post ideas about AI</div>
+            </div>
+            <div class="suggestion" data-prompt="What are the benefits of meditation?">
+              <div class="suggestion-title">Ask anything</div>
+              <div class="suggestion-desc">Benefits of meditation</div>
+            </div>
+          </div>
+        </div>
+        <div id="messages" class="messages" hidden></div>
+      </div>
+
+      <div class="input-wrapper">
+        <form id="chat-form">
+          <div class="input-container">
+            <textarea
+              id="user-input"
+              rows="1"
+              placeholder="Message Harsha Bot..."
+              autocomplete="off"
+            ></textarea>
+            <button type="submit" class="send-btn" id="send-btn" disabled aria-label="Send">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+              </svg>
+            </button>
+          </div>
+        </form>
+        <p class="input-hint">Harsha Bot can make mistakes. Check important info.</p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const OLLAMA_URL = "http://localhost:11434/api/chat";
+    const MODEL = "llama3.2:3b";
+
+    const chatArea = document.getElementById("chat-area");
+    const welcome = document.getElementById("welcome");
+    const messagesEl = document.getElementById("messages");
+    const chatForm = document.getElementById("chat-form");
+    const userInput = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    const newChatBtn = document.getElementById("new-chat-btn");
+
+    let messages = [];
+    let isLoading = false;
+
+    function autoResize() {
+      userInput.style.height = "auto";
+      userInput.style.height = Math.min(userInput.scrollHeight, 200) + "px";
+      sendBtn.disabled = isLoading || !userInput.value.trim();
+    }
+
+    function showChat() {
+      welcome.hidden = true;
+      messagesEl.hidden = false;
+    }
+
+    function createMessageRow(role, content, extraClass = "") {
+      const row = document.createElement("div");
+      row.className = "message-row";
+
+      const avatar = document.createElement("div");
+      avatar.className = `avatar ${role === "user" ? "user" : "bot"}`;
+      avatar.textContent = role === "user" ? "U" : "AI";
+
+      const body = document.createElement("div");
+      body.className = `message-content ${extraClass}`.trim();
+      body.textContent = content;
+
+      row.appendChild(avatar);
+      row.appendChild(body);
+      return { row, body };
+    }
+
+    function createTypingIndicator() {
+      const row = document.createElement("div");
+      row.className = "message-row";
+      row.id = "typing-indicator";
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar bot";
+      avatar.textContent = "AI";
+
+      const body = document.createElement("div");
+      body.className = "message-content loading";
+      body.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+      row.appendChild(avatar);
+      row.appendChild(body);
+      return row;
+    }
+
+    function scrollToBottom() {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function setLoading(loading) {
+      isLoading = loading;
+      userInput.disabled = loading;
+      sendBtn.disabled = loading || !userInput.value.trim();
+    }
+
+    async function sendMessage(text) {
+      if (!text.trim() || isLoading) return;
+
+      showChat();
+      userInput.value = "";
+      autoResize();
+
+      const { row } = createMessageRow("user", text);
+      messagesEl.appendChild(row);
+      messages.push({ role: "user", content: text });
+
+      const typing = createTypingIndicator();
+      messagesEl.appendChild(typing);
+      scrollToBottom();
+      setLoading(true);
+
+      try {
+        const res = await fetch(OLLAMA_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: MODEL, messages, stream: false }),
+        });
+
+        const data = await res.json();
+        typing.remove();
+
+        if (!res.ok) {
+          const { row: errRow } = createMessageRow("bot", `Error: ${data.error || "Something went wrong"}`, "error");
+          messagesEl.appendChild(errRow);
+          messages.pop();
+          return;
+        }
+
+        const reply = data.message.content;
+        const { row: botRow } = createMessageRow("bot", reply);
+        messagesEl.appendChild(botRow);
+        messages.push({ role: "assistant", content: reply });
+      } catch {
+        typing.remove();
+        const { row: errRow } = createMessageRow("bot", "Could not reach Ollama. Make sure it is running.", "error");
+        messagesEl.appendChild(errRow);
+        messages.pop();
+      } finally {
+        setLoading(false);
+        scrollToBottom();
+        userInput.focus();
+      }
+    }
+
+    function clearChat() {
+      messages = [];
+      messagesEl.innerHTML = "";
+      messagesEl.hidden = true;
+      welcome.hidden = false;
+      userInput.value = "";
+      autoResize();
+      userInput.focus();
+    }
+
+    chatForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      sendMessage(userInput.value.trim());
+    });
+
+    userInput.addEventListener("input", autoResize);
+
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        if (userInput.value.trim() && !isLoading) {
+          sendMessage(userInput.value.trim());
+        }
+      }
+    });
+
+    newChatBtn.addEventListener("click", clearChat);
+
+    document.querySelectorAll(".suggestion").forEach((el) => {
+      el.addEventListener("click", () => {
+        sendMessage(el.dataset.prompt);
+      });
+    });
+  </script>
+</body>
+</html>
